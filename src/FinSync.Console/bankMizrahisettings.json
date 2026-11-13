@@ -1,0 +1,28 @@
+{
+  "MizrahiBank": {
+    "LoginUrl": "https://www.mizrahi-tefahot.co.il/",
+    "Username": "",
+    "Password": "",
+    "LoginTimeoutSeconds": 180,
+    "PageTimeoutSeconds": 60,
+    "Headless": false,
+    "Masking": {
+      "SensitiveLabels": [],
+      "NonSensitiveLabels": [
+        "תאור נייר",
+        "סוג פעולה",
+        "ערך נקוב",
+        "שער",
+        "בנק",
+        "מהות העברה",
+        "אסמכתא מסב",
+        "תאריך ביצוע",
+        "שעת ביצוע"
+      ],
+      "TrustedNumericLabels": [
+        "ערך נקוב",
+        "שער"
+      ]
+    }
+  }
+}
