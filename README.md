@@ -1,5 +1,7 @@
 # FinSync – Financial Transaction Collector
 
+[![CI](https://github.com/idanharash/finsync/actions/workflows/ci.yml/badge.svg)](https://github.com/idanharash/finsync/actions/workflows/ci.yml)
+
 ## Overview
 A .NET 10 console application. It collects the previous calendar month's current-account transactions from Mizrahi-Tefahot online banking, masks the descriptions and upserts the results into JSON.
 Technologies: C# / .NET 10, PuppeteerSharp 20.2.4, Microsoft.Extensions DI / Options / Configuration 10.0, System.Text.Json and xUnit.

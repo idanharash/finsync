@@ -55,7 +55,8 @@ public class DependencyRuleTests
     private static IReadOnlyList<string> ProjectReferences(string project) =>
         ProjectFile(project)
             .Descendants("ProjectReference")
-            .Select(reference => Path.GetFileNameWithoutExtension(reference.Attribute("Include")!.Value))
+            // csproj paths use Windows separators; normalize so this also works on Linux CI.
+            .Select(reference => Path.GetFileNameWithoutExtension(reference.Attribute("Include")!.Value.Replace('\\', '/')))
             .ToList();
 
     private static HashSet<string> TransitiveProjectReferences(string project)
