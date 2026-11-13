@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore FinSync.sln
+
+      - name: Build
+        run: dotnet build FinSync.sln --configuration Release --no-restore
+
+      - name: Unit tests
+        run: dotnet test tests/FinSync.Tests/FinSync.Tests.csproj --configuration Release --no-build --filter "Category!=Browser" --logger "trx;LogFileName=unit-tests.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-results
+          path: "**/TestResults/*.trx"
+
+  browser-tests:
+    # Headless Chromium against synthetic HTML only; never touches a real bank.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      # Ubuntu 23.10+ blocks the unprivileged user namespaces Chromium's sandbox needs.
+      - name: Allow Chromium sandbox
+        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+
+      - name: Browser tests
+        run: dotnet test tests/FinSync.Tests/FinSync.Tests.csproj --configuration Release --filter "Category=Browser" --logger "trx;LogFileName=browser-tests.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-results
+          path: "**/TestResults/*.trx"
