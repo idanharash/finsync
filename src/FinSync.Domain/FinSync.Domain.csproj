@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="FinSync.Shared" />
-    <InternalsVisibleTo Include="FinSync.Tests" />
-  </ItemGroup>
-
-</Project>
