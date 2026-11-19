@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using FinSync.Application;
 using FinSync.ConsoleHost;
 using FinSync.IO.Json;
 using FinSync.Mizrahi;
@@ -31,7 +30,7 @@ public sealed class CompositionRootTests : IDisposable
         services.AddMizrahiBank(configuration);
         services.AddJsonPersistence(configuration);
         services.AddTransactionMasking(configuration);
-        services.AddApplication();
+        services.AddTransient<TransactionJob>();
 
         return CompositionRoot.BuildValidatedProvider(services);
     }
@@ -42,9 +41,7 @@ public sealed class CompositionRootTests : IDisposable
         using var provider = BuildProgramServices(password: "pa55-w0rd!");
         provider.GetRequiredService<IStartupValidator>().Validate();
 
-        var job = Assert.Single(provider.GetServices<ITransactionJob>());
-        Assert.IsType<TransactionJob<MizrahiTransaction>>(job);
-        Assert.Equal("MizrahiBank", job.ProviderName);
+        Assert.Equal("MizrahiBank", provider.GetRequiredService<TransactionJob>().ProviderName);
     }
 
     [Fact]
@@ -59,43 +56,36 @@ public sealed class CompositionRootTests : IDisposable
     }
 
     [Fact]
-    public async Task LoadConfiguration_LoadsApplicationThenProviderThenLocalFiles()
+    public async Task LoadConfiguration_LoadsApplicationThenBankThenLocalFiles()
     {
         await File.WriteAllTextAsync(
             _directory.File(CompositionRoot.ApplicationSettingsFile),
             """{ "JsonPersistence": { "OutputDirectory": "output" } }""");
         await File.WriteAllTextAsync(
-            _directory.File("bankMizrahisettings.json"),
+            _directory.File(CompositionRoot.MizrahiSettingsFile),
             """{ "MizrahiBank": { "LoginTimeoutSeconds": 180, "PageTimeoutSeconds": 60 } }""");
         await File.WriteAllTextAsync(
-            _directory.File("bankMizrahisettings.local.json"),
+            _directory.File(CompositionRoot.MizrahiLocalSettingsFile),
             """{ "MizrahiBank": { "Username": "user-4351", "LoginTimeoutSeconds": 90 } }""");
-        await File.WriteAllTextAsync(
-            _directory.File("bankDiscountsettings.local.json"),
-            """{ "DiscountBank": { "Username": "user-7788" } }""");
 
         var configuration = CompositionRoot.LoadConfiguration(_directory.Path);
 
-        Assert.Equal(new[] { "bankMizrahisettings.json" }, CompositionRoot.ProviderSettingsFiles(_directory.Path));
-        Assert.Equal(new[] { "bankDiscountsettings.local.json", "bankMizrahisettings.local.json" }, CompositionRoot.LocalSettingsFiles(_directory.Path));
         Assert.Equal("output", configuration["JsonPersistence:OutputDirectory"]);
         Assert.Equal("60", configuration["MizrahiBank:PageTimeoutSeconds"]);
         Assert.Equal("90", configuration["MizrahiBank:LoginTimeoutSeconds"]);
         Assert.Equal("user-4351", configuration["MizrahiBank:Username"]);
-        Assert.Equal("user-7788", configuration["DiscountBank:Username"]);
     }
 
     [Fact]
     public void ShippedSettingsFiles_ContainNoCredentials()
     {
         var consoleDirectory = ShippedSettings.ConsoleDirectory;
-        var builder = new ConfigurationBuilder()
+        var credentials = new ConfigurationBuilder()
             .SetBasePath(consoleDirectory)
-            .AddJsonFile(CompositionRoot.ApplicationSettingsFile, optional: false);
-        foreach (var file in CompositionRoot.ProviderSettingsFiles(consoleDirectory))
-            builder.AddJsonFile(file, optional: false);
-
-        var credentials = builder.Build().AsEnumerable()
+            .AddJsonFile(CompositionRoot.ApplicationSettingsFile, optional: false)
+            .AddJsonFile(CompositionRoot.MizrahiSettingsFile, optional: false)
+            .Build()
+            .AsEnumerable()
             .Where(setting => setting.Key.EndsWith(":Username", StringComparison.Ordinal) || setting.Key.EndsWith(":Password", StringComparison.Ordinal))
             .ToList();
         var filledCredentialKeys = credentials
@@ -103,7 +93,6 @@ public sealed class CompositionRootTests : IDisposable
             .Select(setting => setting.Key)
             .ToList();
 
-        Assert.NotEmpty(CompositionRoot.ProviderSettingsFiles(consoleDirectory));
         Assert.NotEmpty(credentials);
         Assert.True(
             filledCredentialKeys.Count == 0,

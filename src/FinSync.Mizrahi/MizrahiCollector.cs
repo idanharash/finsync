@@ -1,13 +1,12 @@
 using System.Globalization;
 using Microsoft.Extensions.Options;
 using PuppeteerSharp;
-using FinSync.Abstractions;
 using FinSync.Domain;
 
 namespace FinSync.Mizrahi;
 
 public sealed class MizrahiCollector(IOptions<MizrahiOptions> options, CollectionPeriod period)
-    : ICollector<MizrahiTransaction>
+    : IMizrahiCollector
 {
     private static readonly TimeSpan LoginModalSettleDelay = TimeSpan.FromMilliseconds(1500);
     private static readonly TimeSpan GridSettleDelay = TimeSpan.FromMilliseconds(1500);

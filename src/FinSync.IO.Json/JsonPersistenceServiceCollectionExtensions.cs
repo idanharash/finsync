@@ -12,13 +12,6 @@ public static class JsonPersistenceServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        var otherWriterRegistered = services.Any(descriptor =>
-            descriptor.ServiceType == typeof(ITransactionWriter)
-            && (descriptor.IsKeyedService || descriptor.ImplementationType != typeof(JsonTransactionWriter)));
-
-        if (otherWriterRegistered)
-            throw new InvalidOperationException("Another transaction writer is already registered.");
-
         services
             .AddOptions<JsonPersistenceOptions>()
             .Bind(configuration.GetSection(JsonPersistenceOptions.SectionName))

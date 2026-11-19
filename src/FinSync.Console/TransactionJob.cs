@@ -1,19 +1,12 @@
-using FinSync.Abstractions;
 using FinSync.Domain;
 using FinSync.IO.Json;
+using FinSync.Mizrahi;
 
-namespace FinSync.Application;
+namespace FinSync.ConsoleHost;
 
-public sealed class TransactionJob<TRaw>(
-    ICollector<TRaw> collector,
-    IAdapter<TRaw> adapter,
-    ITransactionWriter writer,
-    IEnumerable<IProviderRegistration> registrations)
-    : ITransactionJob
+public sealed class TransactionJob(IMizrahiCollector collector, MizrahiAdapter adapter, ITransactionWriter writer)
 {
-    public string ProviderName { get; } = registrations
-        .Single(registration => registration.RawType == typeof(TRaw))
-        .ProviderName;
+    public string ProviderName => nameof(TransactionResource.MizrahiBank);
 
     public async Task RunAsync(CancellationToken ct)
     {
@@ -27,25 +20,17 @@ public sealed class TransactionJob<TRaw>(
         await SaveAsync(transactions, ct);
     }
 
-    private async Task<IReadOnlyList<TRaw>> CollectAsync(CancellationToken ct)
+    private async Task<IReadOnlyList<MizrahiTransaction>> CollectAsync(CancellationToken ct)
     {
         var rawTransactions = await RunStageAsync(TransactionJobStage.Collect, () => collector.CollectAsync(ct));
 
         return rawTransactions ?? throw Failure(TransactionJobStage.Collect, "collector returned no result");
     }
 
-    private IReadOnlyList<Transaction> Adapt(IReadOnlyList<TRaw> rawTransactions)
+    private IReadOnlyList<Transaction> Adapt(IReadOnlyList<MizrahiTransaction> rawTransactions)
     {
         var transactions = RunStage(TransactionJobStage.Adapt, () => adapter.Convert(rawTransactions))
             ?? throw Failure(TransactionJobStage.Adapt, "adapter returned no result");
-
-        if (transactions.Count != rawTransactions.Count)
-            throw Failure(
-                TransactionJobStage.Adapt,
-                $"adapter returned {transactions.Count} transactions for {rawTransactions.Count} collected transactions");
-
-        if (transactions.Any(transaction => transaction is null))
-            throw Failure(TransactionJobStage.Adapt, "adapter returned an empty transaction");
 
         var duplicateIdCount = transactions
             .GroupBy(transaction => transaction.Id)

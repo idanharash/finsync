@@ -19,7 +19,7 @@ public static class MaskingServiceCollectionExtensions
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IValidateOptions<SensitiveDataMaskingOptions>, SensitiveDataMaskingOptionsValidator>());
-        services.TryAddSingleton<ISensitiveDataMasker>(provider =>
+        services.TryAddSingleton(provider =>
             new SensitiveDataMasker(provider.GetRequiredService<IOptions<SensitiveDataMaskingOptions>>().Value));
 
         return services;

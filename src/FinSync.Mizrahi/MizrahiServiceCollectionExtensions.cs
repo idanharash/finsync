@@ -2,8 +2,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using FinSync.Domain;
-using FinSync.Registration;
 
 namespace FinSync.Mizrahi;
 
@@ -29,7 +27,10 @@ public static class MizrahiServiceCollectionExtensions
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IValidateOptions<MizrahiMaskingOptions>, MizrahiMaskingOptionsValidator>());
 
-        return services.AddProvider<MizrahiTransaction, MizrahiCollector, MizrahiAdapter, MizrahiTransactionMasker>(
-            nameof(TransactionResource.MizrahiBank));
+        services.TryAddTransient<IMizrahiCollector, MizrahiCollector>();
+        services.TryAddTransient<MizrahiTransactionMasker>();
+        services.TryAddTransient<MizrahiAdapter>();
+
+        return services;
     }
 }

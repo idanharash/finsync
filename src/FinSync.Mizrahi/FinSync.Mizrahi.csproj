@@ -6,8 +6,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FinSync.Abstractions\FinSync.Abstractions.csproj" />
-    <ProjectReference Include="..\FinSync.Registration\FinSync.Registration.csproj" />
+    <ProjectReference Include="..\FinSync.Core\FinSync.Core.csproj" />
   </ItemGroup>
 
 </Project>

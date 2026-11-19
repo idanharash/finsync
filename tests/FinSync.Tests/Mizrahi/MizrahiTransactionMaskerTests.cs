@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using FinSync.Abstractions;
 using FinSync.Domain;
 using FinSync.Masking;
 using FinSync.Mizrahi;
@@ -79,43 +78,5 @@ public class MizrahiTransactionMaskerTests
         Assert.Equal(
             "העברה ל*** | שם מוטב: ***",
             Mask(Raw("העברה לישראל ישראלי", Detail("שם מוטב:", "ישראל ישראלי"))));
-    }
-
-    [Fact]
-    public void Mask_DelegatesComposedTextAndClassifiedValuesToSharedMasker()
-    {
-        var sharedMasker = new SpySensitiveDataMasker();
-        var raw = Raw(
-            "קניה",
-            Detail("שם מעביר:", "ישראל ישראלי"),
-            Detail("מהות העברה:", "החזר"),
-            Detail("ערך נקוב:", "301"));
-
-        var result = new MizrahiTransactionMasker(sharedMasker, Options.Create(ShippedSettings.MizrahiMasking())).Mask(raw);
-
-        var call = Assert.Single(sharedMasker.Calls);
-        Assert.Equal("קניה | שם מעביר: ישראל ישראלי | מהות העברה: החזר | ערך נקוב: 301", call.Description);
-        Assert.Equal(new[] { "ישראל ישראלי" }, call.SensitiveValues);
-        Assert.Equal(new[] { "301" }, call.TrustedValues);
-        Assert.Equal(call.Result, result);
-    }
-
-    private sealed class SpySensitiveDataMasker : ISensitiveDataMasker
-    {
-        private readonly SensitiveDataMasker _inner = ShippedSettings.CreateSensitiveDataMasker();
-
-        public IReadOnlyCollection<string> CommonSensitiveLabels => _inner.CommonSensitiveLabels;
-
-        public List<(string Description, IReadOnlyCollection<string> SensitiveValues, IReadOnlyCollection<string> TrustedValues, MaskedDescription Result)> Calls { get; } = [];
-
-        public MaskedDescription Mask(
-            string description,
-            IReadOnlyCollection<string> sensitiveValues,
-            IReadOnlyCollection<string> trustedValues)
-        {
-            var result = _inner.Mask(description, sensitiveValues, trustedValues);
-            Calls.Add((description, sensitiveValues, trustedValues, result));
-            return result;
-        }
     }
 }

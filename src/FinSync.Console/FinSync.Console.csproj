@@ -11,11 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FinSync.Application\FinSync.Application.csproj" />
     <ProjectReference Include="..\FinSync.Mizrahi\FinSync.Mizrahi.csproj" />
     <ProjectReference Include="..\FinSync.Core\FinSync.Core.csproj" />
     <ProjectReference Include="..\FinSync.IO.Json\FinSync.IO.Json.csproj" />
-    <ProjectReference Include="..\FinSync.Registration\FinSync.Registration.csproj" />
   </ItemGroup>
 
   <ItemGroup>

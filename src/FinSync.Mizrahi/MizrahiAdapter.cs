@@ -1,10 +1,9 @@
 using System.Globalization;
-using FinSync.Abstractions;
 using FinSync.Domain;
 
 namespace FinSync.Mizrahi;
 
-public sealed class MizrahiAdapter(ITransactionMasker<MizrahiTransaction> masker) : IAdapter<MizrahiTransaction>
+public sealed class MizrahiAdapter(MizrahiTransactionMasker masker)
 {
     private const string IdentityDateFormat = "yyyy-MM-dd";
     private const string IdentityAmountFormat = "0.00####";

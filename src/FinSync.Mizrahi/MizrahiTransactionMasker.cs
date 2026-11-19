@@ -1,20 +1,19 @@
 using Microsoft.Extensions.Options;
-using FinSync.Abstractions;
 using FinSync.Domain;
 using FinSync.Masking;
 
 namespace FinSync.Mizrahi;
 
-public sealed class MizrahiTransactionMasker : ITransactionMasker<MizrahiTransaction>
+public sealed class MizrahiTransactionMasker
 {
     private const string DetailSeparator = " | ";
 
-    private readonly ISensitiveDataMasker _sensitiveDataMasker;
+    private readonly SensitiveDataMasker _sensitiveDataMasker;
     private readonly HashSet<string> _sensitiveLabels;
     private readonly HashSet<string> _nonSensitiveLabels;
     private readonly HashSet<string> _trustedNumericLabels;
 
-    public MizrahiTransactionMasker(ISensitiveDataMasker sensitiveDataMasker, IOptions<MizrahiMaskingOptions> options)
+    public MizrahiTransactionMasker(SensitiveDataMasker sensitiveDataMasker, IOptions<MizrahiMaskingOptions> options)
     {
         ArgumentNullException.ThrowIfNull(sensitiveDataMasker);
         ArgumentNullException.ThrowIfNull(options);

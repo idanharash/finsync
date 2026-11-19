@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using FinSync.Abstractions;
 using FinSync.Mizrahi;
 using FinSync.Masking;
 
@@ -44,7 +43,7 @@ public class MizrahiMaskingOptionsTests
         using var provider = BuildShipped(new() { ["NonSensitiveLabels:4"] = "מטבע" });
         provider.GetRequiredService<IStartupValidator>().Validate();
 
-        var masked = provider.GetRequiredService<ITransactionMasker<MizrahiTransaction>>().Mask(Transfer).Value;
+        var masked = provider.GetRequiredService<MizrahiTransactionMasker>().Mask(Transfer).Value;
 
         Assert.Equal("העברה | בנק: *** | ערך נקוב: 76780", masked);
     }

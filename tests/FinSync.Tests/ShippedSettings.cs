@@ -7,8 +7,6 @@ namespace FinSync.Tests;
 
 public static class ShippedSettings
 {
-    public const string MizrahiSettingsFile = "bankMizrahisettings.json";
-
     public static string ConsoleDirectory { get; } = FindConsoleDirectory();
 
     public static IConfiguration Configuration(IDictionary<string, string?>? overrides = null)
@@ -16,7 +14,7 @@ public static class ShippedSettings
         var builder = new ConfigurationBuilder()
             .SetBasePath(ConsoleDirectory)
             .AddJsonFile(CompositionRoot.ApplicationSettingsFile, optional: false)
-            .AddJsonFile(MizrahiSettingsFile, optional: false);
+            .AddJsonFile(CompositionRoot.MizrahiSettingsFile, optional: false);
 
         if (overrides is not null)
             builder.AddInMemoryCollection(overrides);

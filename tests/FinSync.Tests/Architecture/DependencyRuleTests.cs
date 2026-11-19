@@ -1,38 +1,18 @@
-using System.Reflection;
 using System.Xml.Linq;
-using FinSync.Abstractions;
-using FinSync.Application;
-using FinSync.ConsoleHost;
 using FinSync.Domain;
 using FinSync.IO.Json;
 using FinSync.Mizrahi;
-using FinSync.Registration;
 
 namespace FinSync.Tests.Architecture;
 
 public class DependencyRuleTests
 {
-    private static readonly string[] IndependentModules = ["FinSync.Mizrahi", "FinSync.IO.Json"];
-
     private static readonly Dictionary<string, string[]> AllowedProjectReferences = new()
     {
         ["FinSync.Core"] = [],
-        ["FinSync.Abstractions"] = ["FinSync.Core"],
-        ["FinSync.Registration"] = ["FinSync.Abstractions"],
-        ["FinSync.Application"] = ["FinSync.Abstractions", "FinSync.IO.Json"],
-        ["FinSync.Mizrahi"] = ["FinSync.Abstractions", "FinSync.Registration"],
-        ["FinSync.IO.Json"] = ["FinSync.Core"]
-    };
-
-    private static readonly Dictionary<string, Assembly> Assemblies = new()
-    {
-        ["FinSync.Core"] = typeof(Transaction).Assembly,
-        ["FinSync.Abstractions"] = typeof(ICollector<>).Assembly,
-        ["FinSync.Registration"] = typeof(ProviderRegistration<>).Assembly,
-        ["FinSync.Application"] = typeof(ITransactionJob).Assembly,
-        ["FinSync.Mizrahi"] = typeof(MizrahiAdapter).Assembly,
-        ["FinSync.IO.Json"] = typeof(JsonTransactionWriter).Assembly,
-        ["FinSync.Console"] = typeof(CompositionRoot).Assembly
+        ["FinSync.Mizrahi"] = ["FinSync.Core"],
+        ["FinSync.IO.Json"] = ["FinSync.Core"],
+        ["FinSync.Console"] = ["FinSync.Core", "FinSync.Mizrahi", "FinSync.IO.Json"]
     };
 
     private static string SolutionDirectory()
@@ -44,10 +24,8 @@ public class DependencyRuleTests
         return directory?.FullName ?? throw new InvalidOperationException("FinSync.sln was not found above the test output directory.");
     }
 
-    private static string ProjectDirectory(string project) => Path.Combine(SolutionDirectory(), "src", project);
-
     private static XDocument ProjectFile(string project) =>
-        XDocument.Load(Path.Combine(ProjectDirectory(project), $"{project}.csproj"));
+        XDocument.Load(Path.Combine(SolutionDirectory(), "src", project, $"{project}.csproj"));
 
     private static IReadOnlyList<string> ProjectReferences(string project) =>
         ProjectFile(project)
@@ -55,25 +33,6 @@ public class DependencyRuleTests
             // csproj paths use Windows separators; normalize so this also works on Linux CI.
             .Select(reference => Path.GetFileNameWithoutExtension(reference.Attribute("Include")!.Value.Replace('\\', '/')))
             .ToList();
-
-    private static HashSet<string> TransitiveProjectReferences(string project)
-    {
-        var visited = new HashSet<string>();
-        var pending = new Stack<string>(ProjectReferences(project));
-
-        while (pending.TryPop(out var next))
-        {
-            if (!visited.Add(next))
-                continue;
-            foreach (var reference in ProjectReferences(next))
-                pending.Push(reference);
-        }
-
-        return visited;
-    }
-
-    private static IReadOnlyList<string> AssemblyReferences(string project) =>
-        Assemblies[project].GetReferencedAssemblies().Select(reference => reference.Name!).ToList();
 
     [Fact]
     public void Projects_ReferenceExactlyTheirAllowedProjects()
@@ -86,40 +45,23 @@ public class DependencyRuleTests
     }
 
     [Fact]
-    public void IndependentModules_NeverDependOnEachOtherDirectlyTransitivelyOrByAssembly()
+    public void BankCollectionAndPersistence_NeverDependOnEachOther()
     {
-        var violations =
-            from module in IndependentModules
-            from other in IndependentModules
-            where other != module
-                && (TransitiveProjectReferences(module).Contains(other) || AssemblyReferences(module).Contains(other))
-            select $"{module} -> {other}";
+        var mizrahi = typeof(MizrahiAdapter).Assembly.GetReferencedAssemblies().Select(reference => reference.Name);
+        var persistence = typeof(JsonTransactionWriter).Assembly.GetReferencedAssemblies().Select(reference => reference.Name);
 
-        Assert.Empty(violations);
+        Assert.DoesNotContain("FinSync.IO.Json", mizrahi);
+        Assert.DoesNotContain("FinSync.Mizrahi", persistence);
     }
 
     [Fact]
-    public void CoreHasNoBrowser_AbstractionsArePure_AndApplicationHasNoDependencyInjection()
+    public void Core_HasNoBrowser()
     {
         Assert.DoesNotContain(
             ProjectFile("FinSync.Core").Descendants("PackageReference"),
             package => package.Attribute("Include")!.Value == "PuppeteerSharp");
-        Assert.Empty(ProjectFile("FinSync.Abstractions").Descendants("PackageReference"));
-        Assert.Empty(Assemblies["FinSync.Abstractions"].GetExportedTypes().Where(type => !type.IsInterface).Select(type => type.FullName));
         Assert.DoesNotContain(
-            AssemblyReferences("FinSync.Application"),
-            reference => reference.StartsWith("Microsoft.Extensions.DependencyInjection", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public void ConsoleSource_DoesNotNameConcreteProviderTypes()
-    {
-        string[] concreteProviderTypes = ["MizrahiCollector", "MizrahiAdapter", "MizrahiTransactionMasker", "MizrahiTransaction"];
-        var consoleSource = Directory
-            .EnumerateFiles(ProjectDirectory("FinSync.Console"), "*.cs", SearchOption.TopDirectoryOnly)
-            .Select(File.ReadAllText);
-
-        Assert.All(consoleSource, source =>
-            Assert.DoesNotContain(concreteProviderTypes, typeName => source.Contains(typeName, StringComparison.Ordinal)));
+            typeof(Transaction).Assembly.GetReferencedAssemblies(),
+            reference => reference.Name == "PuppeteerSharp");
     }
 }

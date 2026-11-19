@@ -4,7 +4,7 @@ using FinSync.Domain;
 
 namespace FinSync.Masking;
 
-public sealed partial class SensitiveDataMasker : ISensitiveDataMasker
+public sealed partial class SensitiveDataMasker
 {
     public const string Redacted = "***";
 

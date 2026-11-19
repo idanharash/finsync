@@ -1,10 +1,9 @@
 using Microsoft.Extensions.Options;
-using FinSync.Abstractions;
 using FinSync.Masking;
 
 namespace FinSync.Mizrahi;
 
-public sealed class MizrahiMaskingOptionsValidator(ISensitiveDataMasker sensitiveDataMasker) : IValidateOptions<MizrahiMaskingOptions>
+public sealed class MizrahiMaskingOptionsValidator(SensitiveDataMasker sensitiveDataMasker) : IValidateOptions<MizrahiMaskingOptions>
 {
     public ValidateOptionsResult Validate(string? name, MizrahiMaskingOptions options)
     {

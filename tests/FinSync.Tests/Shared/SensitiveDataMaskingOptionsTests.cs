@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using FinSync.Abstractions;
 using FinSync.Masking;
 
 namespace FinSync.Tests.Shared;
@@ -19,7 +18,7 @@ public class SensitiveDataMaskingOptionsTests
     {
         using var provider = Build(configuration);
         provider.GetRequiredService<IStartupValidator>().Validate();
-        return provider.GetRequiredService<ISensitiveDataMasker>().Mask(Description, [], []).Value;
+        return provider.GetRequiredService<SensitiveDataMasker>().Mask(Description, [], []).Value;
     }
 
     [Fact]

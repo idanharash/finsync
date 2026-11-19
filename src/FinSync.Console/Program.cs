@@ -1,7 +1,6 @@
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using FinSync.Application;
 using FinSync.ConsoleHost;
 using FinSync.IO.Json;
 using FinSync.Mizrahi;
@@ -25,20 +24,20 @@ try
     services.AddMizrahiBank(configuration);
     services.AddJsonPersistence(configuration);
     services.AddTransactionMasking(configuration);
-    services.AddApplication();
+    services.AddTransient<TransactionJob>();
 
     using var provider = CompositionRoot.BuildValidatedProvider(services);
     provider.GetRequiredService<IStartupValidator>().Validate();
 
-    var failedProviders = await new TransactionJobRunner(Console.Out, Console.Error)
-        .RunAllAsync(provider.GetServices<ITransactionJob>(), cancellation.Token);
+    var job = provider.GetRequiredService<TransactionJob>();
+    var succeeded = await new TransactionJobRunner(Console.Out, Console.Error).RunAsync(job, cancellation.Token);
 
     Console.WriteLine(
         $"Output directory: {Path.GetFullPath(provider.GetRequiredService<IOptions<JsonPersistenceOptions>>().Value.OutputDirectory)}");
-    if (failedProviders.Count == 0)
+    if (succeeded)
         return ExitCodes.Success;
 
-    Console.Error.WriteLine($"Failed providers: {string.Join(", ", failedProviders)}");
+    Console.Error.WriteLine($"Failed providers: {job.ProviderName}");
     return ExitCodes.JobFailed;
 }
 catch (Exception exception) when (ValidationFailures(exception).Any())

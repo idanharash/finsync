@@ -1,4 +1,4 @@
-namespace FinSync.Application;
+namespace FinSync.ConsoleHost;
 
 public enum TransactionJobStage
 {

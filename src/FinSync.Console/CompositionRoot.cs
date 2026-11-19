@@ -6,34 +6,20 @@ namespace FinSync.ConsoleHost;
 public static class CompositionRoot
 {
     public const string ApplicationSettingsFile = "appsettings.json";
-    public const string ProviderSettingsPattern = "*settings.json";
-    public const string LocalSettingsPattern = "*settings.local.json";
+    public const string MizrahiSettingsFile = "bankMizrahisettings.json";
 
-    public static IReadOnlyList<string> ProviderSettingsFiles(string basePath) =>
-        SettingsFiles(basePath, ProviderSettingsPattern)
-            .Where(file => !string.Equals(file, ApplicationSettingsFile, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+    /// <summary>Optional, git-ignored overrides: the place for credentials.</summary>
+    public const string MizrahiLocalSettingsFile = "bankMizrahisettings.local.json";
 
-    public static IReadOnlyList<string> LocalSettingsFiles(string basePath) =>
-        SettingsFiles(basePath, LocalSettingsPattern);
-
-    public static IConfiguration LoadConfiguration(string basePath)
-    {
-        var builder = new ConfigurationBuilder()
+    // Loaded in this order, later files override earlier ones. The bank files are optional so that a missing
+    // file is reported by startup validation (exit code 2), naming the settings, rather than as a crash.
+    public static IConfiguration LoadConfiguration(string basePath) =>
+        new ConfigurationBuilder()
             .SetBasePath(basePath)
-            .AddJsonFile(ApplicationSettingsFile, optional: false);
-
-        foreach (var file in ProviderSettingsFiles(basePath).Concat(LocalSettingsFiles(basePath)))
-            builder.AddJsonFile(file, optional: false);
-
-        return builder.Build();
-    }
-
-    private static IReadOnlyList<string> SettingsFiles(string basePath, string pattern) =>
-        Directory.EnumerateFiles(basePath, pattern)
-            .Select(file => Path.GetFileName(file))
-            .Order(StringComparer.Ordinal)
-            .ToList();
+            .AddJsonFile(ApplicationSettingsFile, optional: false)
+            .AddJsonFile(MizrahiSettingsFile, optional: true)
+            .AddJsonFile(MizrahiLocalSettingsFile, optional: true)
+            .Build();
 
     public static ServiceProvider BuildValidatedProvider(IServiceCollection services) =>
         services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });

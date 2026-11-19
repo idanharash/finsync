@@ -1,41 +1,38 @@
-using FinSync.Application;
+using Microsoft.Extensions.Options;
+using FinSync.ConsoleHost;
 using FinSync.Domain;
-using FinSync.Registration;
+using FinSync.Mizrahi;
 
 namespace FinSync.Tests.Application;
 
+// The job runs with the real adapter and masker; only the browser (collector) and the file system (writer) are stubbed.
 public class TransactionJobTests
 {
-    private const string ProviderName = "FakeProvider";
-
-    private static readonly IReadOnlyList<FakeRaw> CollectedRaw = [new("a"), new("b")];
+    private static readonly IReadOnlyList<MizrahiTransaction> CollectedRaw = [TestTransactions.Raw("1"), TestTransactions.Raw("2")];
 
     private readonly List<string> _calls = [];
+    private readonly MizrahiAdapter _adapter = new(new MizrahiTransactionMasker(
+        ShippedSettings.CreateSensitiveDataMasker(), Options.Create(ShippedSettings.MizrahiMasking())));
     private readonly StubCollector _collector;
-    private readonly StubAdapter _adapter;
     private readonly StubWriter _writer;
-    private readonly TransactionJob<FakeRaw> _job;
+    private readonly TransactionJob _job;
 
     public TransactionJobTests()
     {
         _collector = new StubCollector(_calls) { OnCollect = _ => Task.FromResult(CollectedRaw) };
-        _adapter = new StubAdapter(_calls);
         _writer = new StubWriter(_calls);
-        _job = new TransactionJob<FakeRaw>(_collector, _adapter, _writer, [new ProviderRegistration<FakeRaw>(ProviderName)]);
+        _job = new TransactionJob(_collector, _adapter, _writer);
     }
 
     [Fact]
     public async Task RunAsync_RunsCollectAdaptSaveInOrderAndHandsDataOver()
     {
-        IReadOnlyList<Transaction> adapted = [TestTransactions.Create("a"), TestTransactions.Create("b")];
-        _adapter.OnConvert = _ => adapted;
         using var cancellation = new CancellationTokenSource();
 
         await _job.RunAsync(cancellation.Token);
 
-        Assert.Equal(new[] { "collect", "adapt", "save" }, _calls);
-        Assert.Same(CollectedRaw, _adapter.Received);
-        Assert.Same(adapted, _writer.Received);
+        Assert.Equal(new[] { "collect", "save" }, _calls);
+        Assert.Equal(_adapter.Convert(CollectedRaw).Select(transaction => transaction.Id), _writer.Received!.Select(transaction => transaction.Id));
         Assert.Equal(cancellation.Token, _collector.ReceivedToken);
         Assert.Equal(cancellation.Token, _writer.ReceivedToken);
     }
@@ -43,62 +40,71 @@ public class TransactionJobTests
     [Fact]
     public async Task RunAsync_EmptyPeriod_SavesEmptyList()
     {
-        _collector.OnCollect = _ => Task.FromResult<IReadOnlyList<FakeRaw>>([]);
+        _collector.OnCollect = _ => Task.FromResult<IReadOnlyList<MizrahiTransaction>>([]);
 
         await _job.RunAsync(CancellationToken.None);
 
         Assert.Empty(_writer.Received!);
     }
 
-    [Theory]
-    [InlineData(TransactionJobStage.Collect, "collect")]
-    [InlineData(TransactionJobStage.Adapt, "collect,adapt")]
-    [InlineData(TransactionJobStage.Save, "collect,adapt,save")]
-    public async Task RunAsync_StageFails_ReportsStageKeepsCauseAndStops(TransactionJobStage failingStage, string expectedCalls)
+    [Fact]
+    public async Task RunAsync_CollectFails_ReportsStageKeepsCauseAndStops()
     {
         var failure = new InvalidOperationException("stage failed");
-        switch (failingStage)
-        {
-            case TransactionJobStage.Collect: _collector.OnCollect = _ => throw failure; break;
-            case TransactionJobStage.Adapt: _adapter.OnConvert = _ => throw failure; break;
-            case TransactionJobStage.Save: _writer.OnSave = (_, _) => throw failure; break;
-        }
+        _collector.OnCollect = _ => throw failure;
 
         var exception = await Assert.ThrowsAsync<TransactionJobException>(() => _job.RunAsync(CancellationToken.None));
 
-        Assert.Equal(failingStage, exception.Stage);
+        Assert.Equal(TransactionJobStage.Collect, exception.Stage);
         Assert.Same(failure, exception.InnerException);
-        Assert.Equal(expectedCalls.Split(','), _calls);
+        Assert.Equal(new[] { "collect" }, _calls);
     }
 
-    [Theory]
-    [InlineData("lost transaction")]
-    [InlineData("duplicate id")]
-    [InlineData("null transaction")]
-    public async Task RunAsync_AdapterResultViolatesInvariant_FailsBeforeSaving(string violation)
+    [Fact]
+    public async Task RunAsync_AdaptFails_ReportsStageKeepsCauseAndDoesNotSave()
     {
-        IReadOnlyList<Transaction> result = violation switch
-        {
-            "lost transaction" => [TestTransactions.Create("a")],
-            "duplicate id" => [TestTransactions.Create("a"), TestTransactions.Create("a")],
-            _ => [TestTransactions.Create("a"), null!]
-        };
-        _adapter.OnConvert = _ => result;
+        _collector.OnCollect = _ => Task.FromResult<IReadOnlyList<MizrahiTransaction>>([TestTransactions.Raw("1") with { Amount = "not a number" }]);
 
         var exception = await Assert.ThrowsAsync<TransactionJobException>(() => _job.RunAsync(CancellationToken.None));
 
         Assert.Equal(TransactionJobStage.Adapt, exception.Stage);
+        Assert.IsType<FormatException>(exception.InnerException);
+        Assert.Equal(new[] { "collect" }, _calls);
+    }
+
+    [Fact]
+    public async Task RunAsync_SaveFails_ReportsStageAndKeepsCause()
+    {
+        var failure = new IOException("disk full");
+        _writer.OnSave = (_, _) => throw failure;
+
+        var exception = await Assert.ThrowsAsync<TransactionJobException>(() => _job.RunAsync(CancellationToken.None));
+
+        Assert.Equal(TransactionJobStage.Save, exception.Stage);
+        Assert.Same(failure, exception.InnerException);
+        Assert.Equal(new[] { "collect", "save" }, _calls);
+    }
+
+    [Fact]
+    public async Task RunAsync_DuplicateTransactionIds_FailBeforeSaving()
+    {
+        _collector.OnCollect = _ => Task.FromResult<IReadOnlyList<MizrahiTransaction>>([TestTransactions.Raw("1"), TestTransactions.Raw("1")]);
+
+        var exception = await Assert.ThrowsAsync<TransactionJobException>(() => _job.RunAsync(CancellationToken.None));
+
+        Assert.Equal(TransactionJobStage.Adapt, exception.Stage);
+        Assert.Contains("1 transaction ids are not unique", exception.Message);
         Assert.DoesNotContain("save", _calls);
     }
 
     [Fact]
     public async Task RunAsync_FailureMessage_NamesProviderButNotInnerMessage()
     {
-        _adapter.OnConvert = _ => throw new FormatException("שם מעביר: ישראל ישראלי 123456782");
+        _collector.OnCollect = _ => throw new InvalidOperationException("שם מעביר: ישראל ישראלי 123456782");
 
         var exception = await Assert.ThrowsAsync<TransactionJobException>(() => _job.RunAsync(CancellationToken.None));
 
-        Assert.Contains(ProviderName, exception.Message);
+        Assert.Contains(nameof(TransactionResource.MizrahiBank), exception.Message);
         Assert.DoesNotContain("ישראל", exception.Message);
         Assert.DoesNotContain("123456782", exception.Message);
     }
