@@ -2,7 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Options;
 using FinSync.Domain;
 using FinSync.IO.Json;
-using FinSync.Shared;
+using FinSync.Masking;
 
 namespace FinSync.Tests.IO;
 

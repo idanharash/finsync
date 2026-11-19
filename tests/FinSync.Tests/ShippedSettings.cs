@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using FinSync.ConsoleHost;
 using FinSync.Mizrahi;
-using FinSync.Shared;
+using FinSync.Masking;
 
 namespace FinSync.Tests;
 

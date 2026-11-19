@@ -1,9 +1,8 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using FinSync.Abstractions;
 using FinSync.Domain;
 
-namespace FinSync.Shared;
+namespace FinSync.Masking;
 
 public sealed partial class SensitiveDataMasker : ISensitiveDataMasker
 {

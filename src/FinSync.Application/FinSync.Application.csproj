@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FinSync.Abstractions\FinSync.Abstractions.csproj" />
+    <ProjectReference Include="..\FinSync.IO.Json\FinSync.IO.Json.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,9 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using FinSync.Abstractions;
 using FinSync.Application;
 using FinSync.ConsoleHost;
-using FinSync.Shared;
+using FinSync.Masking;
 using FinSync.Registration;
 using FinSync.Tests.Application;
+using FinSync.IO.Json;
 
 namespace FinSync.Tests.ConsoleHost;
 

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 using FinSync.Domain;
-using FinSync.Shared;
+using FinSync.Masking;
 using FinSync.Mizrahi;
 
 namespace FinSync.Tests.Mizrahi;

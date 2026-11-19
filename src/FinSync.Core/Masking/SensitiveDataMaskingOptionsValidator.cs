@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace FinSync.Shared;
+namespace FinSync.Masking;
 
 public sealed class SensitiveDataMaskingOptionsValidator : IValidateOptions<SensitiveDataMaskingOptions>
 {

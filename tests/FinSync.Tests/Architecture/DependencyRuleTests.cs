@@ -5,7 +5,6 @@ using FinSync.Application;
 using FinSync.ConsoleHost;
 using FinSync.Domain;
 using FinSync.IO.Json;
-using FinSync.Shared;
 using FinSync.Mizrahi;
 using FinSync.Registration;
 
@@ -13,28 +12,26 @@ namespace FinSync.Tests.Architecture;
 
 public class DependencyRuleTests
 {
-    private static readonly string[] IndependentModules = ["FinSync.Application", "FinSync.Mizrahi", "FinSync.IO.Json", "FinSync.Shared"];
+    private static readonly string[] IndependentModules = ["FinSync.Mizrahi", "FinSync.IO.Json"];
 
     private static readonly Dictionary<string, string[]> AllowedProjectReferences = new()
     {
-        ["FinSync.Domain"] = [],
-        ["FinSync.Abstractions"] = ["FinSync.Domain"],
+        ["FinSync.Core"] = [],
+        ["FinSync.Abstractions"] = ["FinSync.Core"],
         ["FinSync.Registration"] = ["FinSync.Abstractions"],
-        ["FinSync.Application"] = ["FinSync.Abstractions"],
+        ["FinSync.Application"] = ["FinSync.Abstractions", "FinSync.IO.Json"],
         ["FinSync.Mizrahi"] = ["FinSync.Abstractions", "FinSync.Registration"],
-        ["FinSync.IO.Json"] = ["FinSync.Abstractions"],
-        ["FinSync.Shared"] = ["FinSync.Abstractions"]
+        ["FinSync.IO.Json"] = ["FinSync.Core"]
     };
 
     private static readonly Dictionary<string, Assembly> Assemblies = new()
     {
-        ["FinSync.Domain"] = typeof(Transaction).Assembly,
+        ["FinSync.Core"] = typeof(Transaction).Assembly,
         ["FinSync.Abstractions"] = typeof(ICollector<>).Assembly,
         ["FinSync.Registration"] = typeof(ProviderRegistration<>).Assembly,
         ["FinSync.Application"] = typeof(ITransactionJob).Assembly,
         ["FinSync.Mizrahi"] = typeof(MizrahiAdapter).Assembly,
         ["FinSync.IO.Json"] = typeof(JsonTransactionWriter).Assembly,
-        ["FinSync.Shared"] = typeof(SensitiveDataMasker).Assembly,
         ["FinSync.Console"] = typeof(CompositionRoot).Assembly
     };
 
@@ -102,9 +99,11 @@ public class DependencyRuleTests
     }
 
     [Fact]
-    public void DomainAndAbstractions_ArePure_AndApplicationHasNoDependencyInjection()
+    public void CoreHasNoBrowser_AbstractionsArePure_AndApplicationHasNoDependencyInjection()
     {
-        Assert.Empty(ProjectFile("FinSync.Domain").Descendants("PackageReference"));
+        Assert.DoesNotContain(
+            ProjectFile("FinSync.Core").Descendants("PackageReference"),
+            package => package.Attribute("Include")!.Value == "PuppeteerSharp");
         Assert.Empty(ProjectFile("FinSync.Abstractions").Descendants("PackageReference"));
         Assert.Empty(Assemblies["FinSync.Abstractions"].GetExportedTypes().Where(type => !type.IsInterface).Select(type => type.FullName));
         Assert.DoesNotContain(

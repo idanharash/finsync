@@ -7,7 +7,7 @@ namespace FinSync.Tests.Shared;
 public class MaskingBoundaryTests
 {
     [Fact]
-    public void MaskedDescription_CanOnlyBeCreatedByTheMaskingModule()
+    public void MaskedDescription_CanOnlyBeCreatedInsideCore()
     {
         var type = typeof(MaskedDescription);
 
@@ -19,7 +19,7 @@ public class MaskingBoundaryTests
             method => method.ReturnType == type);
         Assert.Null(type.GetProperty(nameof(MaskedDescription.Value))!.SetMethod);
         Assert.Equal(
-            new[] { "FinSync.Shared", "FinSync.Tests" },
+            new[] { "FinSync.Tests" },
             type.Assembly.GetCustomAttributes<InternalsVisibleToAttribute>().Select(attribute => attribute.AssemblyName).Order());
     }
 

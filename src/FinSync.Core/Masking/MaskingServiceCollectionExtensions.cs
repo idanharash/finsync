@@ -2,9 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using FinSync.Abstractions;
 
-namespace FinSync.Shared;
+namespace FinSync.Masking;
 
 public static class MaskingServiceCollectionExtensions
 {

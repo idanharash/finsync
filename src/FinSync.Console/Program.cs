@@ -5,7 +5,7 @@ using FinSync.Application;
 using FinSync.ConsoleHost;
 using FinSync.IO.Json;
 using FinSync.Mizrahi;
-using FinSync.Shared;
+using FinSync.Masking;
 
 Console.OutputEncoding = Encoding.UTF8;
 

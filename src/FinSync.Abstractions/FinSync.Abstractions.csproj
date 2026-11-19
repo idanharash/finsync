@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\FinSync.Domain\FinSync.Domain.csproj" />
+    <ProjectReference Include="..\FinSync.Core\FinSync.Core.csproj" />
   </ItemGroup>
 
 </Project>

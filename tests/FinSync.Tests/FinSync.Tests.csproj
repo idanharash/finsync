@@ -14,12 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FinSync.Domain\FinSync.Domain.csproj" />
+    <ProjectReference Include="..\..\src\FinSync.Core\FinSync.Core.csproj" />
+    <ProjectReference Include="..\..\src\FinSync.IO.Json\FinSync.IO.Json.csproj" />
     <ProjectReference Include="..\..\src\FinSync.Abstractions\FinSync.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\FinSync.Registration\FinSync.Registration.csproj" />
-    <ProjectReference Include="..\..\src\FinSync.Shared\FinSync.Shared.csproj" />
     <ProjectReference Include="..\..\src\FinSync.Application\FinSync.Application.csproj" />
-    <ProjectReference Include="..\..\src\FinSync.IO.Json\FinSync.IO.Json.csproj" />
     <ProjectReference Include="..\..\src\FinSync.Mizrahi\FinSync.Mizrahi.csproj" />
     <ProjectReference Include="..\..\src\FinSync.Console\FinSync.Console.csproj" />
   </ItemGroup>

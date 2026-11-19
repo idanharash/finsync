@@ -1,6 +1,7 @@
 using FinSync.Abstractions;
 using FinSync.Domain;
-using FinSync.Shared;
+using FinSync.Masking;
+using FinSync.IO.Json;
 
 namespace FinSync.Tests.Application;
 

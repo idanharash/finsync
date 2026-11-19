@@ -1,6 +1,6 @@
 using FinSync.Domain;
 
-namespace FinSync.Abstractions;
+namespace FinSync.IO.Json;
 
 public interface ITransactionWriter
 {

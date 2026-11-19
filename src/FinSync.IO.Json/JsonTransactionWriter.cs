@@ -1,7 +1,6 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using FinSync.Abstractions;
 using FinSync.Domain;
 
 namespace FinSync.IO.Json;

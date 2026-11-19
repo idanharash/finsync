@@ -1,4 +1,4 @@
-namespace FinSync.Shared;
+namespace FinSync.Masking;
 
 public sealed class SensitiveDataMaskingOptions
 {

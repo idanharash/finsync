@@ -2,7 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using FinSync.Abstractions;
-using FinSync.Shared;
+using FinSync.Masking;
 
 namespace FinSync.Tests.Shared;
 

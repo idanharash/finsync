@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using FinSync.Abstractions;
 using FinSync.Mizrahi;
-using FinSync.Shared;
+using FinSync.Masking;
 
 namespace FinSync.Tests.Mizrahi;
 
